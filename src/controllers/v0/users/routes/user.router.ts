@@ -11,6 +11,7 @@ router.get('/');
 
 router.get('/:id', async (req: Request, res: Response) => {
   const {id} = req.params;
+  console.log("Gettind user. ID: " + id);
   const item = await User.findByPk(id);
   res.send(item);
 });

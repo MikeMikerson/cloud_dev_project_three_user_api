@@ -29,17 +29,20 @@ function generateJWT(user: User): string {
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.headers || !req.headers.authorization) {
+    console.log("No authorization headers");
     return res.status(401).send({message: 'No authorization headers.'});
   }
 
   const tokenBearer = req.headers.authorization.split(' ');
   if (tokenBearer.length != 2) {
+    console.log("Malformed token");
     return res.status(401).send({message: 'Malformed token.'});
   }
 
   const token = tokenBearer[1];
   return jwt.verify(token, c.config.jwt.secret, (err, decoded) => {
     if (err) {
+      console.log("Failed to authenticate");
       return res.status(500).send({auth: false, message: 'Failed to authenticate.'});
     }
     return next();
@@ -49,29 +52,33 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 router.get('/verification',
     requireAuth,
     async (req: Request, res: Response) => {
+      console.log("Authenticated.");
       return res.status(200).send({auth: true, message: 'Authenticated.'});
     });
 
 router.post('/login', async (req: Request, res: Response) => {
   const email = req.body.email;
   const password = req.body.password;
-
   if (!email || !EmailValidator.validate(email)) {
+    console.log("Invalid email");
     return res.status(400).send({auth: false, message: 'Email is required or malformed.'});
   }
 
   if (!password) {
+    console.log("Password required");
     return res.status(400).send({auth: false, message: 'Password is required.'});
   }
 
   const user = await User.findByPk(email);
   if (!user) {
+    console.log("User not found");
     return res.status(401).send({auth: false, message: 'User was not found..'});
   }
 
   const authValid = await comparePasswords(password, user.passwordHash);
 
   if (!authValid) {
+    console.log("Password was invalid");
     return res.status(401).send({auth: false, message: 'Password was invalid.'});
   }
 
@@ -85,15 +92,18 @@ router.post('/', async (req: Request, res: Response) => {
   const plainTextPassword = req.body.password;
 
   if (!email || !EmailValidator.validate(email)) {
+    console.log("Invalid email");
     return res.status(400).send({auth: false, message: 'Email is missing or malformed.'});
   }
 
   if (!plainTextPassword) {
+    console.log("Invalid password");
     return res.status(400).send({auth: false, message: 'Password is required.'});
   }
 
   const user = await User.findByPk(email);
   if (user) {
+    console.log("User already exists");
     return res.status(422).send({auth: false, message: 'User already exists.'});
   }
 
@@ -108,6 +118,7 @@ router.post('/', async (req: Request, res: Response) => {
 
 
   const jwt = generateJWT(savedUser);
+  console.log("Saving user");
   res.status(201).send({token: jwt, user: savedUser.short()});
 });
 
